@@ -11,30 +11,28 @@ import json
 
 
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    confirm_password = serializers.CharField(write_only=True)
-    
-    class Meta:
-        model = get_user_model()
-        fields = ('username', 'profile_picture', 'email', 'password', 'confirm_password', 'phone')
+from rest_framework import serializers
+from .models import User
 
-    def validate(self, data):
-        if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError("Password doesn't match")
-        return data
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "password", "role")
+        extra_kwargs = {
+            "username": {"required": False},  # make username optional
+        }
 
     def create(self, validated_data):
-        validated_data.pop('confirm_password')
-        User = get_user_model()
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            password=validated_data['password'],
-            email=validated_data['email'],
-            phone=validated_data.get('phone')  # Assign phone field
-        )
-        if 'profile_picture' in validated_data:
-            user.profile_picture = validated_data['profile_picture']
-        user.is_approved = False
+        # Auto-generate username if not provided
+        username = validated_data.get("username") or validated_data.get("email")
+        validated_data["username"] = username
+
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
         user.save()
         return user
 
@@ -45,14 +43,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class StaffApproveSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email", "role", "is_approved", "phone", "profile_picture"]
-        # read_only_fields = ["id", "username", "email", "role"]  # Prevent modification of certain fields
+        fields = ["id", "username", "email", "role", "phone", "is_approved", "profile_picture"]
 
     def update(self, instance, validated_data):
-        """Ensure 'is_approved' is updated properly"""
         is_approved = validated_data.get("is_approved", instance.is_approved)
 
-        if isinstance(is_approved, str):  # Handle "true"/"false" as string input
+        if isinstance(is_approved, str): 
             is_approved = is_approved.lower() == "true"
 
         instance.is_approved = is_approved

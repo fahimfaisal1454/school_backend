@@ -13,6 +13,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=40, choices=ROLE_CHOICES, default='General',blank=True, null=True)
     profile_picture = models.ImageField(upload_to='image/', blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
+    is_approved = models.BooleanField(default=False, blank=True, null= True)
 
     def save(self, *args, **kwargs):
         if self.is_superuser:

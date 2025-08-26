@@ -15,6 +15,7 @@ from django.db import IntegrityError
 
 
 
+
 User=get_user_model()
 
 class IsAdmin(BasePermission):
@@ -53,19 +54,17 @@ class StaffApproveView(generics.RetrieveUpdateDestroyAPIView):  # GET, PUT, DELE
 
     queryset = User.objects.all()
     serializer_class = StaffApproveSerializer
-    # lookup_field = "id"  # Users will be accessed using their ID
 
     def update(self, request, *args, **kwargs):
-        """Update user's approval status"""
         user = self.get_object()
 
-        # Convert "true"/"false" strings to actual boolean values
         is_approved = request.data.get("is_approved")
         if isinstance(is_approved, str):
             is_approved = is_approved.lower() == "true"
 
         try:
             user.is_approved = is_approved
+            user.role = "Teacher"
             user.save()
             return Response(
                 {"message": f"User {user.username} approval status updated successfully."},
@@ -95,6 +94,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 
+# class AllUser(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated, IsAdmin]
+#     serializer_class = UserProfileSerializer
+#     queryset = User.objects.all().order_by("-date_joined")
+    
+    
+     
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]  
     
