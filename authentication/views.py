@@ -1,46 +1,57 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .models import *
-from .serializers import *
+from .models import*
+from .serializers import*
+from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import BasePermission
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated,AllowAny
+from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from rest_framework.parsers import JSONParser, MultiPartParser, FormParser  # <-- add parsers
 
-User = get_user_model()
+
+
+
+User=get_user_model()
 
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and getattr(request.user, "role", None) == "Admin"
+        return request.user.is_authenticated and request.user.role == 'Admin'
 
 
 class UserRegistrationView(ListCreateAPIView):
     permission_classes = [AllowAny]
-    queryset = User.objects.all()
+
+    queryset = User.objects.all() 
     serializer_class = UserRegistrationSerializer
-    parser_classes = [JSONParser, MultiPartParser, FormParser]  # <-- accept JSON + multipart + form-data
 
     def create(self, request, *args, **kwargs):
-        # print("Received data:", request.data)  # optional debug
+        print("Received data:", request.data)  # Log received data
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)   # this was already here
+        serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        return Response({"message": "Registration successful"}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Registration successful"},
+            status=status.HTTP_201_CREATED
+        )
+
 
 
 class StaffListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+
     queryset = User.objects.all()
     serializer_class = StaffApproveSerializer
 
 
+
 class StaffApproveView(generics.RetrieveUpdateDestroyAPIView):  # GET, PUT, DELETE
     permission_classes = [IsAdmin]
+
     queryset = User.objects.all()
     serializer_class = StaffApproveSerializer
 
@@ -66,6 +77,7 @@ class StaffApproveView(generics.RetrieveUpdateDestroyAPIView):  # GET, PUT, DELE
             )
 
     def delete(self, request, *args, **kwargs):
+        """Delete the user"""
         user = self.get_object()
         user.delete()
         return Response(
@@ -74,13 +86,24 @@ class StaffApproveView(generics.RetrieveUpdateDestroyAPIView):  # GET, PUT, DELE
         )
 
 
+
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
-class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
 
+# class AllUser(generics.ListCreateAPIView):
+#     permission_classes = [IsAuthenticated, IsAdmin]
+#     serializer_class = UserProfileSerializer
+#     queryset = User.objects.all().order_by("-date_joined")
+    
+    
+     
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]  
+    
     def get(self, request):
         if request.user.is_authenticated:
             serializer = UserProfileSerializer(request.user)
@@ -89,20 +112,29 @@ class UserProfileView(APIView):
             return Response({"error": "User not authenticated"}, status=401)
 
 
+
+
 class PasswordChangeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Only authenticated users can access this view
 
     def post(self, request):
+        # Create the serializer with data and context
+        print(request.data)
         if not request.user.is_authenticated:
-            return Response({"detail": "Authentication is required."}, status=401)
+            return Response({"detail": "Authentication is required."}, status=401)  # Unauthorized
 
-        serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
+        serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+        # Check if the data is valid
         if serializer.is_valid():
-            serializer.save()
+            serializer.save()  # Save the new password
             return Response({"detail": "Password updated successfully."})
 
-        # print("Validation errors:", serializer.errors)
-        return Response(serializer.errors, status=400)
+        # If the serializer is invalid, print the errors for debugging
+        print("Validation errors:", serializer.errors)
+
+        return Response(serializer.errors, status=400)  # Return 400 with error
+    
+    
 
 
 class UserProfileUpdateView(APIView):
@@ -111,7 +143,9 @@ class UserProfileUpdateView(APIView):
     def patch(self, request, *args, **kwargs):
         user = request.user
         serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True)
+        
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully", "data": serializer.data}, status=200)
         return Response(serializer.errors, status=400)
+    
