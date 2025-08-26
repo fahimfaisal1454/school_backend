@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'contact',
     'master',
     'acknowledgments',
+    "teacher_api",
 
     # Third-party
     'corsheaders',

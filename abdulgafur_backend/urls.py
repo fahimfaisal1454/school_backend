@@ -32,6 +32,7 @@ urlpatterns += [
     path('api/', include('people.urls')),
     path('api/', include('master.urls')),
     path('api/', include('acknowledgments.urls')),
+    path('api/', include('teacher_api.urls')),
 ]
 
 if settings.DEBUG:

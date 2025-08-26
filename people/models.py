@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.conf import settings   # 👈 import your custom User
 
 class Teacher(models.Model):
     full_name = models.CharField(max_length=150)
@@ -10,10 +10,9 @@ class Teacher(models.Model):
     designation = models.CharField(max_length=100, blank=True)
     teacher_intro = models.TextField(blank=True, null=True)
 
+    
     def __str__(self):
         return self.full_name
-
-
 
 class Staff(models.Model):
     full_name = models.CharField(max_length=150)
@@ -24,7 +23,6 @@ class Staff(models.Model):
 
     def __str__(self):
         return self.full_name
-
 
 
 class Student(models.Model):
@@ -43,7 +41,6 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.roll_number})"
-    
 
 
 class PrincipalList(models.Model):
@@ -57,7 +54,6 @@ class PrincipalList(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.to_date})"
-    
 
 
 class PresidentList(models.Model):

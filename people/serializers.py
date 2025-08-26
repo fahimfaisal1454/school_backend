@@ -1,70 +1,57 @@
 from rest_framework import serializers
-from .models import Teacher, Staff, Student,PrincipalList, PresidentList
+from .models import Teacher, Staff, Student, PrincipalList, PresidentList
 from institution.utils.image_compressor import compress_image
 
 
+# ---------- Utility Mixin for image compression ----------
+class _CompressImageMixin:
+    image_field_names = ("photo",)
 
-class TeacherSerializer(serializers.ModelSerializer):
+    def _compress_incoming_images(self, validated_data):
+        for field in self.image_field_names:
+            if field in validated_data and validated_data[field]:
+                validated_data[field] = compress_image(validated_data[field], max_size_kb=200)
+        return validated_data
+
     def create(self, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
+        validated_data = self._compress_incoming_images(validated_data)
         return super().create(validated_data)
-    
+
     def update(self, instance, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
+        validated_data = self._compress_incoming_images(validated_data)
         return super().update(instance, validated_data)
-    
+
+
+# ---------- Teacher ----------
+class TeacherSerializer(_CompressImageMixin, serializers.ModelSerializer):
     class Meta:
         model = Teacher
-        fields = '__all__'
+        fields = "__all__"
 
 
-
-class StaffSerializer(serializers.ModelSerializer):
-    def create(self, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
-        return super().create(validated_data)
-    
-    def update(self, instance, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
-        return super().update(instance, validated_data)
-    
+# ---------- Staff ----------
+class StaffSerializer(_CompressImageMixin, serializers.ModelSerializer):
     class Meta:
         model = Staff
-        fields = '__all__'
+        fields = "__all__"
 
 
-
-class StudentSerializer(serializers.ModelSerializer):
-    def create(self, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
-        return super().create(validated_data)
-    
-    def update(self, instance, validated_data):
-        if 'photo' in validated_data:
-            validated_data['photo'] = compress_image(validated_data['photo'], max_size_kb=200)
-        return super().update(instance, validated_data)
-    
+# ---------- Student ----------
+class StudentSerializer(_CompressImageMixin, serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = '__all__' 
+        fields = "__all__"
 
 
-
-
-
+# ---------- Principal List ----------
 class PrincipalListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrincipalList
-        fields = '__all__'
+        fields = "__all__"
 
 
-
+# ---------- President List ----------
 class PresidentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = PresidentList
-        fields = '__all__'
+        fields = "__all__"
